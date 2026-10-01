@@ -278,7 +278,7 @@ acceptBtn.addEventListener("click", () => {
 });
 
 // Der Ablehnen-Button gibt nach ein paar Klicks einfach auf
-const NEIN = ["Sicher?", "Ganz sicher?", "Das zählt nicht.", "Netter Versuch."];
+const NEIN = ["Sicher?", "Ganz sicher?", "Das zählt ned i has ned gse", "wieso machsch es immer so schwer"];
 let neinCount = 0;
 declineBtn.addEventListener("click", () => {
   if (neinCount < NEIN.length) {
