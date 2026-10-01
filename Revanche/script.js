@@ -211,30 +211,82 @@ function update(justRevealed) {
 }
 
 /* ============ KONFETTI (nur beim allerletzten Los) ============ */
+f/* ============ KONFETTI (nur beim allerletzten Los) ============ */
 function confetti() {
   if (reduceMotion) return;
   const c = document.getElementById("confetti"), x = c.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
   c.width = innerWidth * dpr; c.height = innerHeight * dpr;
   x.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const colors = [cssVar("--green"), cssVar("--ink"), "#ffffff", cssVar("--green")];
-  const parts = Array.from({ length: 140 }, () => ({
-    x: innerWidth / 2 + (Math.random() - .5) * 80, y: innerHeight * .35,
-    vx: (Math.random() - .5) * 12, vy: -Math.random() * 13 - 4,
-    w: 6 + Math.random() * 6, h: 3 + Math.random() * 5,
-    rot: Math.random() * 6, vr: (Math.random() - .5) * .3,
-    color: colors[Math.floor(Math.random() * colors.length)]
-  }));
+
+  const DURATION = 7000;   // Gesamtdauer in Millisekunden
+  const colors = [cssVar("--green"), cssVar("--ink"), "#ffffff", cssVar("--green"), "#7ee0ad"];
+  const parts = [];
+
+  function makePart(px, py, vx, vy) {
+    return {
+      x: px, y: py, vx, vy,
+      w: 6 + Math.random() * 6, h: 3 + Math.random() * 5,
+      rot: Math.random() * 6, vr: (Math.random() - .5) * .3,
+      flip: Math.random() * Math.PI, vflip: .05 + Math.random() * .1,   // Papier-Flattern
+      sway: Math.random() * Math.PI * 2,                                // seitliches Pendeln
+      color: colors[Math.floor(Math.random() * colors.length)]
+    };
+  }
+
+  // Eine Salve an einer Stelle (Angaben in Prozent der Bildschirmgrösse)
+  function burst(xFrac, yFrac, count) {
+    for (let n = 0; n < count; n++) {
+      parts.push(makePart(
+        innerWidth * xFrac + (Math.random() - .5) * 40,
+        innerHeight * yFrac,
+        (Math.random() - .5) * 10,
+        -Math.random() * 12 - 3
+      ));
+    }
+  }
+
+  // Wo und wann die Salven losgehen (delay in ms)
+  const BURSTS = [
+    { x: .5, y: .35, delay: 0 },
+    { x: .15, y: .45, delay: 300 },
+    { x: .85, y: .45, delay: 300 },
+    { x: .3, y: .7, delay: 900 },
+    { x: .7, y: .7, delay: 900 },
+    { x: .5, y: .55, delay: 1600 },
+  ];
+  BURSTS.forEach(b => setTimeout(() => burst(b.x, b.y, 60), b.delay));
+
+  // Zusätzlich ein Regen, der von oben über den ganzen Bildschirm fällt
+  for (let n = 0; n < 90; n++) {
+    parts.push(makePart(
+      Math.random() * innerWidth,
+      -Math.random() * innerHeight * .8 - 10,   // startet versetzt oberhalb des Bildschirms
+      (Math.random() - .5) * 2,
+      Math.random() * 2
+    ));
+  }
+
   const start = performance.now();
   (function frame(t) {
+    const elapsed = t - start;
     x.clearRect(0, 0, innerWidth, innerHeight);
+    // In der letzten Sekunde sanft ausblenden statt abrupt verschwinden
+    x.globalAlpha = Math.min(1, (DURATION - elapsed) / 1000);
     parts.forEach(p => {
-      p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      p.vy = Math.min(p.vy + .22, 4.5);       // Schwerkraft, aber mit Luftwiderstand
+      p.vx *= .985;
+      p.sway += .05;
+      p.x += p.vx + Math.sin(p.sway) * .8;    // leichtes Hin- und Herpendeln
+      p.y += p.vy;
+      p.rot += p.vr; p.flip += p.vflip;
       x.save(); x.translate(p.x, p.y); x.rotate(p.rot);
-      x.fillStyle = p.color; x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); x.restore();
+      x.fillStyle = p.color;
+      x.fillRect(-p.w / 2, -p.h / 2, p.w * Math.cos(p.flip), p.h);   // cos = Drehen im Raum
+      x.restore();
     });
-    if (t - start < 3500) requestAnimationFrame(frame);
-    else x.clearRect(0, 0, innerWidth, innerHeight);
+    if (elapsed < DURATION) requestAnimationFrame(frame);
+    else { x.globalAlpha = 1; x.clearRect(0, 0, innerWidth, innerHeight); }
   })(start);
 }
 
