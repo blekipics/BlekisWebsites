@@ -1,12 +1,12 @@
 /* ============ HIER DEINE LOSE ANPASSEN ============
    kind: kleine grüne Zeile oben, title: grosser Titel, text: Beschreibung */
 const LOSE = [
-  { kind: "Gutschein", title: "Shoggi Tag", text: "Du und ich Lindt museum hihi" },
-  { kind: "Gutschein", title: "Rundi mit Coco", text: "E Usfahrt, nur du und ich, Ziel + Musik ghört dir" },
+  { kind: "Guetschi", title: "Shoggi Tag", text: "Du und ich Lindt museum hihi" },
+  { kind: "Guetschi", title: "Rundi mit Coco", text: "E Usfahrt, nur du und ich, Ziel + Musik ghört dir" },
   { kind: "Niete", title: "Leider nüt gwunne :(", text: "Dafür hesh immerno mich, ich glaub das isch als trostpreis okay oder?" },
-  { kind: "Gutschein", title: "Filmobig", text: "Mir gönd is Kino und du suechsch de film us" },
-  { kind: "Gutschein", title: "Date-Obig", text: "ich plan alles, du muesch nur uftauche und schön usgseh, aber de zweite teil isch eh immer erfüllt *hihi*" },
-  { kind: "Gutschein", title: "Streetphotography", text: "Mir gönd Streetphotography go mache oder id berge bi schnee schöni fotis go mache" },
+  { kind: "Guteschi", title: "Filmobig", text: "Mir gönd is Kino und du suechsch de film us" },
+  { kind: "Guetschi", title: "Date-Obig", text: "ich plan alles, du muesch nur uftauche und schön usgseh, aber de zweite teil isch eh immer erfüllt *hihi*" },
+  { kind: "Guteschi", title: "Streetphotography", text: "Mir gönd Streetphotography go mache oder id berge bi schnee schöni fotis go mache" },
 ];
 
 const STORAGE_KEY = "revanche-lose";
@@ -260,7 +260,7 @@ function checkScrolled() {
   const atBottom = scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 8;
   if (atBottom && check.disabled) {
     check.disabled = false;
-    hint.textContent = "Wow, du hast wirklich alles gelesen. Respekt.";
+    hint.textContent = "Wow, du hesh würkli alles glese? Respekt.";
   }
 }
 scrollBox.addEventListener("scroll", checkScrolled);
@@ -283,7 +283,7 @@ declineBtn.addEventListener("click", () => {
     declineBtn.textContent = NEIN[neinCount++];
   } else {
     declineBtn.remove();
-    hint.textContent = "Der Ablehnen-Button hat gekündigt.";
+    hint.textContent = "De Ablehn-Button isch ned ich und het demfall kei bock hüt uf dich.";
   }
 });
 
