@@ -191,52 +191,8 @@ function setupScratch(card, i) {
   canvas.addEventListener("keydown", e => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reveal(); }
   });
-  
-  function pos(e) {
-    const r = canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
-    function scratch(p) {
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.strokeStyle = "#000";      // NEU: volle Deckkraft = radiert zu 100 %
-    ctx.lineWidth = 38; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo((last || p).x, (last || p).y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    last = p;
-    if (++moves % 6 === 0) checkProgress();
-  }
-  // Wie viel ist schon frei? Stichprobe der (fast) transparenten Pixel
-  function checkProgress() {
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    let clear = 0, total = 0;
-    for (let a = 3; a < data.length; a += 4 * 24) {
-      total++;
-      if (data[a] < 128) clear++;  // NEU: "mehr als halb durchsichtig" zählt auch
-    }
-    if (clear / total > REVEAL_AT) reveal();
-  }
-  function reveal() {
-    if (canvas.classList.contains("gone")) return;
-    drawing = false;
-    canvas.classList.add("gone");
-    if (!revealed.includes(i)) revealed.push(i);
-    saveState();
-    update(true);
-  }
 
-  canvas.addEventListener("pointerdown", e => {
-    drawing = true; last = null;
-    canvas.setPointerCapture(e.pointerId);
-    scratch(pos(e));
-  });
-  canvas.addEventListener("pointermove", e => { if (drawing) scratch(pos(e)); });
-  ["pointerup", "pointercancel"].forEach(t =>
-    canvas.addEventListener(t, () => { drawing = false; last = null; checkProgress(); }));
-  canvas.addEventListener("keydown", e => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reveal(); }
-  });
+  
 }
 
 function update(justRevealed) {
