@@ -45,17 +45,19 @@ window.addEventListener("resize", sizeCrumbCanvas);
 function spawnCrumbs(x, y, count) {
   if (reduceMotion) return;
   const green = cssVar("--green");
+  // Hell, dunkel und ein Hauch Silber, damit man sie auch vor Grün sieht
+  const CRUMB_COLORS = [green, "#065c34", "#7ee0ad", "#c9c9c9"];
   for (let n = 0; n < count; n++) {
     crumbs.push({
       x: x + (Math.random() - .5) * 20,
       y: y + (Math.random() - .5) * 10,
       vx: (Math.random() - .5) * 2.4,      // seitlicher Schwung
       vy: -Math.random() * 1.5,            // kleiner Hüpfer nach oben
-      size: 1.5 + Math.random() * 3,
+      size: 3 + Math.random() * 4,         // etwas grösser als vorher
       rot: Math.random() * Math.PI,
       vr: (Math.random() - .5) * .25,      // Drehung
       life: 1,                              // 1 = voll sichtbar, 0 = weg
-      color: Math.random() < .25 ? "#0b7a48" : green
+      color: CRUMB_COLORS[Math.floor(Math.random() * CRUMB_COLORS.length)]
     });
   }
   if (!crumbsRunning) { crumbsRunning = true; requestAnimationFrame(tickCrumbs); }
