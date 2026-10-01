@@ -211,7 +211,7 @@ function update(justRevealed) {
 }
 
 /* ============ KONFETTI (nur beim allerletzten Los) ============ */
-f/* ============ KONFETTI (nur beim allerletzten Los) ============ */
+/* ============ KONFETTI (nur beim allerletzten Los) ============ */
 function confetti() {
   if (reduceMotion) return;
   const c = document.getElementById("confetti"), x = c.getContext("2d");
