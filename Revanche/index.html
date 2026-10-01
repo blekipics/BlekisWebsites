@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Revanche – Rubbellose für Adisa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@500;700&family=Montserrat:ital,wght@0,300;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<canvas id="crumbs" aria-hidden="true"></canvas>
+
+<!-- ============ AGB-SPERRE (kommt zuerst) ============ -->
+<div class="agb-gate" id="agbGate" role="dialog" aria-modal="true" aria-labelledby="agbTitle">
+  <div class="agb-box">
+    <h2 id="agbTitle">Gutschein-AGB</h2>
+    <p class="agb-sub">Juristisch no fragwürdiger wie dini AGBS vo mim Gschenk zum 23.</p>
+    <div class="agb-scroll" id="agbScroll" tabindex="0">
+      <ol>
+        <li>Mitem Akzeptiere vode AGBs bestätigt die Nutzerin, dass de Ussteller en usgzeichnete Ehemah ish</li>
+        <li>Alli Guetschi sind unbegrenzt gültig, aber ich werde dennoch Versueche dich sie Vergesse zlah</li>
+        <li>En Screenshot vom Los gilt als rechtsgültige Bewiess.</li>
+        <li>Hesh du vor es izlöse während ich imene Ranked Match, nere wichtige Quest, oder am Serie luege bin, chum ich uf dich zue sobald ich zit han.</li>
+        <li>Niete cha ned umtuscht werde, hihi</li>
+        <li>Coco dörf nur mit agmessener bewunderig betrete werde</li>
+        <li>für witeri guetschih eifach es Mail ah bleon.islami.... ach weish was schrieb mer eifach uf snap denn</li>
+        <li>ablehne chasch theorethish wirsh aber eh ned mache hihi</li>
+      </ol>
+    </div>
+    <p class="agb-hint" id="agbHint">Scroll bis abe zum witercho</p>
+    <label class="agb-check">
+      <input type="checkbox" id="agbCheck" disabled>
+      <span>Ich habe alles gelesen und akzeptiere, dass Widerstand zwecklos ist.</span>
+    </label>
+    <div class="agb-actions">
+      <button class="btn btn-primary" id="agbAccept" disabled>Akzeptieren</button>
+      <button class="btn" id="agbDecline">Ablehnen</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <header class="hero">
+    <h1>Revanche</h1>
+    <p class="sub">Mini Kreativi Version als Antwort uf dini Guetschi</p>
+    <p class="intro">Für min Shaz, rubbel sie mitem Finger frei, was druf staht, gilt... meistens.</p>
+    <p class="disclaimer">Bleki übernimmt kei haftig für weinafäll oder cringe-attackene.</p>
+  </header>
+
+  <div class="counter" aria-live="polite">
+    <strong id="count">0/6</strong><span>Lösli freigrubbelt</span>
+  </div>
+
+  <section class="grid" id="grid"></section>
+
+  <section class="finale" id="finale">
+    <h3>alli freigrubblet</h3>
+    <p class="love">Danke für dis Gschenk damals<br>Ich liebe dich. ♥</p>
+  </section>
+
+  <footer>
+    <p class="signature">Made by Bleon Islami</p>
+    <button class="reset" id="reset">Alles zrucksetze</button>
+  </footer>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
