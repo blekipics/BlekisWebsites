@@ -4,9 +4,9 @@ const LOSE = [
   { kind: "Guetschi", title: "Shoggi Tag", text: "Du und ich Lindt museum hihi" },
   { kind: "Guetschi", title: "Rundi mit Coco", text: "E Usfahrt, nur du und ich, Ziel + Musik ghört dir" },
   { kind: "Niete", title: "Leider nüt gwunne :(", text: "Dafür hesh immerno mich, ich glaub das isch als trostpreis okay oder?" },
-  { kind: "Guteschi", title: "Filmobig", text: "Mir gönd is Kino und du suechsch de film us" },
+  { kind: "Guetschi", title: "Filmobig", text: "Mir gönd is Kino und du suechsch de film us" },
   { kind: "Guetschi", title: "Date-Obig", text: "ich plan alles, du muesch nur uftauche und schön usgseh, aber de zweite teil isch eh immer erfüllt *hihi*" },
-  { kind: "Guteschi", title: "Streetphotography", text: "Mir gönd Streetphotography go mache oder id berge bi schnee schöni fotis go mache" },
+  { kind: "Guetschi", title: "Streetphotography", text: "Mir gönd Streetphotography go mache oder id berge bi schnee schöni fotis go mache" },
 ];
 
 const STORAGE_KEY = "revanche-lose";
@@ -127,7 +127,7 @@ function setupScratch(card, i) {
     ctx.font = `${Math.round(r.height * 0.32)}px "Bebas Neue", Impact, sans-serif`;
     ctx.fillText("RUBBELN", r.width / 2, r.height / 2 - 6);
     ctx.font = `500 ${Math.max(11, Math.round(r.height * 0.075))}px Montserrat, Arial, sans-serif`;
-    ctx.fillText(i === 2 ? "Viel Glück." : "Mit dem Finger drüberwischen", r.width / 2, r.height / 2 + r.height * 0.2);
+    ctx.fillText(i === 2 ? "Viel Glück." : "Mitem finger eifach drüber rubble hihi", r.width / 2, r.height / 2 + r.height * 0.2);
   }
 
   document.fonts.ready.then(() => { lastWidth = 0; paint(); });
