@@ -1,0 +1,179 @@
+:root {
+  --surface-100: #FAF6EE;
+  --surface-200: #F2EAD9;
+  --ink: #121212;
+  --ink-muted: #5A5A5A;
+  --brand: #157347;
+  --brand-tint: #BFE3CF;
+  --accent-rose: #E0527A;
+  --accent-rose-tint: #F6CFDA;
+  --accent-wine: #5C1A2B;
+  --line: #121212;
+  --font-display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --font-sans: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  --font-hand: "Caveat", "Comic Sans MS", cursive;
+  --gutter: clamp(20px, 5vw, 64px);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 300;
+  color: var(--ink);
+  background: var(--surface-100);
+}
+
+/* Papierstruktur: feines Korn über dem ganzen Hintergrund */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+a { text-decoration: none; }
+
+.page {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Kopfzeile */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 28px var(--gutter);
+  border-bottom: 2px solid var(--ink);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.navlinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navlinks a {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.navlinks a:hover { color: var(--ink); }
+
+.navlinks a.active {
+  color: var(--ink);
+  border-bottom: 3px solid var(--brand);
+  padding-bottom: 6px;
+}
+
+/* Hero */
+.hero {
+  padding: 88px var(--gutter) 56px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 14vw, 120px);
+  font-weight: 400;
+  line-height: 0.85;
+  margin: 0;
+}
+
+.hero-rule {
+  width: 140px;
+  height: 4px;
+  background: var(--brand);
+  margin: 20px 0 28px;
+}
+
+.hero-subtitle {
+  font-size: 18px;
+  line-height: 1.55;
+  max-width: 520px;
+  margin: 0 0 32px;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--brand);
+  color: var(--surface-100);
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  padding: 12px 32px;
+  border: 2px solid var(--brand);
+}
+
+/* Kapitel */
+.chapter {
+  padding: 40px var(--gutter) 72px;
+}
+
+.chapter-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin: 0 0 8px;
+}
+
+.chapter-title {
+  font-family: var(--font-display);
+  font-size: clamp(44px, 8vw, 64px);
+  font-weight: 400;
+  line-height: 0.9;
+  margin: 0 0 16px;
+}
+
+.chapter-rule {
+  width: 100%;
+  height: 2px;
+  background: var(--ink);
+  margin: 0 0 32px;
+}
+
+/* Notiz-Karte für den Geburtstagsgruss */
+.note-card {
+  max-width: 560px;
+  padding: clamp(24px, 5vw, 40px);
+  background: var(--surface-100);
+  border: 2px solid var(--ink);
+  transform: rotate(-1deg);
+}
+
+.note-text {
+  font-family: var(--font-hand);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.3;
+  margin: 0;
+}
