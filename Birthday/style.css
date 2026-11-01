@@ -177,3 +177,55 @@ a { text-decoration: none; }
   line-height: 1.3;
   margin: 0;
 }
+
+
+/* Zeitstrahl */
+.timeline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+  margin-bottom: 48px;
+}
+
+.timeline-tag {
+  border: 2px solid var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+.timeline-line {
+  flex: 1;
+  min-width: 40px;
+  height: 2px;
+  background: var(--ink);
+}
+
+/* Fliesstext der Geschichte */
+.story {
+  max-width: 640px;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.story p { margin: 0 0 20px; }
+
+.story ul {
+  margin: 0 0 32px;
+  padding-left: 20px;
+}
+
+.story li { margin-bottom: 10px; }
+
+/* Bildplatzhalter, später durch ein echtes Foto ersetzen */
+.photo-frame {
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-200);
+  border: 2px solid var(--ink);
+}
