@@ -36,6 +36,8 @@
   let lastAct = Date.now();
   let hiddenAt = 0;
   let fails = 0;
+  let demo = false;      // Demo-Modus: Beispieldaten nur im Speicher
+  let realState = null;  // echte Daten während der Demo
 
   // ───────────────────────── Kleine Helfer ─────────────────────────
   const h = (tag, attrs, ...kids) => {
@@ -203,6 +205,7 @@
   const monthsUntil = (iso) => { const [y, m, d] = iso.split('-').map(Number); return Math.max(1, Math.ceil((new Date(y, m - 1, d) - new Date()) / (30.4 * 864e5))); };
 
   async function commit(msg) {
+    if (demo) { renderMain(true); toast('Demo: nichts wird gespeichert'); return; }
     try { await seal(); renderMain(true); if (msg) toast(msg); }
     catch (e) { toast('Speichern fehlgeschlagen.'); }
   }
@@ -384,76 +387,182 @@
     });
   }
 
+  // ───────────────────────── Diagramme & Kennzahlen ─────────────────────────
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v); return e; };
+  const kfmt = (n) => (Math.abs(n) >= 1000 ? (Math.round(n / 100) / 10) + 'k' : String(Math.round(n)));
+  function niceMax(v) { if (!(v > 0)) return 100; const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+
+  // Diagramme werden nach dem Einhängen auf die echte Breite gezeichnet (1 Einheit = 1 Pixel, Schrift bleibt lesbar).
+  function chartBox(draw) { const b = h('div', { class: 'chart-box' }); b._draw = draw; return b; }
+  function drawCharts() {
+    document.querySelectorAll('.chart-box').forEach((b) => { const w = Math.floor(b.clientWidth); if (w > 60 && b._draw) b.replaceChildren(b._draw(w)); });
+  }
+  function frame(W, H, max, label) {
+    const L = 46, R = 10, T = 12, B = 26, pw = W - L - R, ph = H - T - B;
+    const s = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': label });
+    for (let g = 0; g <= 4; g++) {
+      const y = T + ph * g / 4;
+      s.append(svgEl('line', { x1: L, x2: W - R, y1: y, y2: y, class: 'ch-grid' }));
+      const t = svgEl('text', { x: L - 8, y: y + 4, 'text-anchor': 'end', class: 'ch-axis' }); t.textContent = kfmt(max * (1 - g / 4)); s.append(t);
+    }
+    const X = (i) => L + pw * (i + .5) / 12, Y = (v) => T + ph * (1 - Math.max(0, v) / max);
+    const narrow = pw / 12 < 30;
+    MONTHS.forEach((m, i) => { const t = svgEl('text', { x: X(i), y: H - 7, 'text-anchor': 'middle', class: 'ch-axis' }); t.textContent = narrow ? m[0] : m.slice(0, 3); s.append(t); });
+    return { s, X, Y, L, R, T, ph, pw };
+  }
+  const pathOf = (pts) => pts.map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1)).join(' ');
+
+  function lineChart() {
+    return chartBox((W) => {
+      const H = 240, act = [], plan = [];
+      let a = state.start, p = state.start, last = -1;
+      state.months.forEach((m, i) => { if (m.actual != null) last = i; });
+      state.months.forEach((m, i) => { p += m.plan || 0; plan.push(p); if (i <= last) { a += m.actual || 0; act.push(a); } });
+      const vals = [...plan, ...act, state.start]; if (state.goal != null) vals.push(state.goal);
+      const max = niceMax(Math.max(...vals, 1));
+      const { s, X, Y, L, R, ph, T } = frame(W, H, max, 'Sparverlauf über das Jahr');
+      if (state.goal != null) s.append(svgEl('line', { x1: L, x2: W - R, y1: Y(state.goal), y2: Y(state.goal), class: 'ch-goal' }));
+      s.append(svgEl('path', { d: pathOf(plan.map((v, i) => [X(i), Y(v)])), class: 'ch-plan' }));
+      if (act.length) {
+        const pts = act.map((v, i) => [X(i), Y(v)]), base = T + ph;
+        s.append(svgEl('path', { d: pathOf(pts) + ` L${pts[pts.length - 1][0].toFixed(1)} ${base} L${pts[0][0].toFixed(1)} ${base} Z`, class: 'ch-area' }));
+        s.append(svgEl('path', { d: pathOf(pts), class: 'ch-act' }));
+        pts.forEach(([x, y], i) => { const c = svgEl('circle', { cx: x, cy: y, r: 4, class: 'ch-dot' }); const t = svgEl('title'); t.textContent = `${MONTHS[i]}: ${chf(act[i])}`; c.append(t); s.append(c); });
+      }
+      return s;
+    });
+  }
+
+  function barsChart() {
+    return chartBox((W) => {
+      const H = 220, cs = state.months.map((m, i) => calcMonth(i));
+      const tot = cs.map((c) => (c.has ? c.fx + c.va + c.sv + Math.max(c.free, 0) : 0));
+      const max = niceMax(Math.max(...tot, 1));
+      const { s, X, Y, pw } = frame(W, H, max, 'Verwendung des Einkommens pro Monat');
+      const bw = Math.min(34, pw / 12 * .62);
+      cs.forEach((c, i) => {
+        if (!c.has) return;
+        let acc = 0;
+        [['b-fix', c.fx, 'Fixkosten'], ['b-var', c.va, 'Variable'], ['b-sav', c.sv, 'Gespart'], ['b-free', Math.max(c.free, 0), 'Frei']].forEach(([cls, v, l]) => {
+          if (v <= 0) return;
+          const y1 = Y(acc + v), y0 = Y(acc);
+          const r = svgEl('rect', { x: X(i) - bw / 2, y: y1, width: bw, height: Math.max(0, y0 - y1 - 1), rx: 2, class: cls });
+          const t = svgEl('title'); t.textContent = `${MONTHS[i]} · ${l}: ${chf(v)}`; r.append(t); s.append(r); acc += v;
+        });
+      });
+      return s;
+    });
+  }
+  const chartLegend = (items) => h('div', { class: 'ch-leg' }, items.map(([l, c]) => h('span', null, h('span', { class: 'dot ' + c }), l)));
+
+  function fixedBars() {
+    const items = state.fixed.filter((f) => f.amount != null).sort((a, b) => perMonth(b) - perMonth(a));
+    if (!items.length) return h('p', { class: 'gfoot', style: { padding: '0' } }, 'Noch keine Beträge erfasst.');
+    const mx = Math.max(...items.map(perMonth), 1), sum = items.reduce((a, f) => a + perMonth(f), 0) || 1;
+    return h('div', { class: 'hbars' }, items.map((f) => h('div', { class: 'hb' },
+      h('div', { class: 'hb-t' }, h('span', null, f.name || 'Ohne Namen'), h('b', null, `${chf(perMonth(f))} · ${pct(perMonth(f) / sum)}`)),
+      h('div', { class: 'bar' }, h('i', { class: 'blue', style: { width: Math.round(perMonth(f) / mx * 100) + '%' } })))));
+  }
+
+  function kpiTiles(c, y) {
+    const n = state.months.filter((m) => m.actual != null).length;
+    const proj = state.start + (n ? y.sv / n * 12 : 0), dev = y.sv - y.plan, rate = y.inc > 0 ? y.sv / y.inc : null;
+    const tiles = [
+      ['Frei diesen Monat', c.has ? chf(c.free) : '–', c.has ? MONTHS[selMonth] : 'noch nicht erfasst', c.has && c.free < 0 ? 'neg' : ''],
+      ['Gespart im Jahr', chf(y.sv), y.plan ? `${dev >= 0 ? '+' : ''}${chf(dev)} zum Plan` : 'kein Plan erfasst', y.plan && dev < 0 ? 'neg' : ''],
+      ['Sparquote', rate == null ? '–' : pct(rate), 'vom Einkommen', ''],
+      ['Prognose Jahresende', n ? chf(proj) : '–', y.goal != null && n ? (proj >= y.goal ? 'Ziel in Reichweite' : `${chf(y.goal - proj)} unter dem Ziel`) : 'bei gleichem Tempo', y.goal != null && n && proj < y.goal ? 'neg' : '']
+    ];
+    return h('div', { class: 'kpis d-kpis' }, tiles.map(([l, v, s, cls]) => h('div', { class: 'kpi' }, h('small', null, l), h('b', { class: cls }, v), h('span', null, s))));
+  }
+
   // ───────────────────────── Ansichten ─────────────────────────
   function viewHome() {
     const c = calcMonth(selMonth), y = calcYear();
     const wrap = h('div', null, largeTitle('Übersicht', `Sparplan ${state.year}`, h('button', { type: 'button', class: 'fab ghost', 'aria-label': 'Design wählen', onclick: openThemes }, svg(IC.palette, { size: 20, sw: 1.9 }))));
+    const dash = h('div', { class: 'dash' });
+    const hero = h('div', { class: 'd-hero' });
 
-    wrap.append(h('div', { class: 'stepper' },
+    hero.append(h('div', { class: 'stepper' },
       h('button', { type: 'button', 'aria-label': 'Vorheriger Monat', onclick: () => { selMonth = (selMonth + 11) % 12; renderMain(); } }, svg(IC.chevL, { size: 20, sw: 2.4 })),
       h('b', null, MONTHS[selMonth]),
       h('button', { type: 'button', 'aria-label': 'Nächster Monat', onclick: () => { selMonth = (selMonth + 1) % 12; renderMain(); } }, svg(IC.chevR, { size: 20, sw: 2.4 }))));
 
     if (!c.has) {
-      wrap.append(h('div', { class: 'card empty' }, h('b', null, `Noch nichts für ${MONTHS[selMonth]}`), h('p', null, 'Trag deine Einnahmen ein, dann siehst du sofort, was nach allen Ausgaben übrig bleibt.'), h('button', { type: 'button', class: 'btn', onclick: () => editMonth(selMonth) }, 'Monat erfassen')));
+      hero.append(h('div', { class: 'card empty' }, h('b', null, `Noch nichts für ${MONTHS[selMonth]}`), h('p', null, 'Trag deine Einnahmen ein, dann siehst du sofort, was nach allen Ausgaben übrig bleibt.'), h('button', { type: 'button', class: 'btn', onclick: () => editMonth(selMonth) }, 'Monat erfassen')));
     } else {
       const neg = c.free < 0;
       const total = neg ? c.fx + c.va + c.sv : c.inc;
       const rows = [['Fixkosten', c.fx, 'c-fix'], ['Variable', c.va, 'c-var'], ['Gespart', c.sv, 'c-sav'], [neg ? 'Überzogen' : 'Frei verfügbar', c.free, 'c-free']];
-      wrap.append(h('div', { class: 'card hero' },
+      hero.append(h('div', { class: 'card hero' },
         donut([{ v: c.fx, cls: 'c-fix' }, { v: c.va, cls: 'c-var' }, { v: c.sv, cls: 'c-sav' }, { v: c.free, cls: 'c-free' }], total, neg ? 'Defizit' : 'Frei verfügbar', chf(c.free), neg),
         h('div', { class: 'legend' }, rows.map(([l, v, cls]) => h('div', { class: 'row' }, h('div', { class: 'rl' }, h('span', { class: 'dot ' + cls }), l), h('div', { class: 'rr' }, h('span', { class: 'strong' }, chf(v)), h('span', null, c.inc ? pct(v / c.inc) : '')))))));
     }
+    dash.append(hero, kpiTiles(c, y));
 
-    wrap.append(h('div', { class: 'card' }, h('h3', null, 'Bisher im Jahr'),
+    dash.append(h('div', { class: 'card d-c1' }, h('h3', null, 'Sparverlauf'), lineChart(),
+      chartLegend([['Ist', 'c-fix'], ['Plan', 'c-sand'], ['Ziel', 'c-var']])));
+
+    const side = h('div', { class: 'd-side' });
+    side.append(h('div', { class: 'card' }, h('h3', null, 'Bisher im Jahr'),
       [['Einnahmen', y.inc], ['Fixkosten', y.fx], ['Variable Ausgaben', y.va], ['Gespart (Ist)', y.sv]].map(([l, v]) => h('div', { class: 'kv' }, h('span', null, l), h('b', null, chf(v)))),
       h('div', { class: 'kv', style: { marginTop: '6px' } }, h('span', null, 'Frei verfügbar'), h('b', { class: y.free < 0 ? 'neg' : '' }, chf(y.free)))));
-
     if (y.goal == null) {
-      wrap.append(h('div', { class: 'card' }, h('h3', null, 'Jahresziel'), h('p', { style: { color: 'var(--sub)', fontSize: '15px', marginBottom: '12px' } }, `Aktuelles Guthaben: ${chf(y.bal)}. Setz dir ein Sparziel für ${state.year}.`), h('button', { type: 'button', class: 'btn ghost', onclick: editPlan }, 'Jahresziel festlegen')));
+      side.append(h('div', { class: 'card' }, h('h3', null, 'Jahresziel'), h('p', { style: { color: 'var(--sub)', fontSize: '15px', marginBottom: '12px' } }, `Aktuelles Guthaben: ${chf(y.bal)}. Setz dir ein Sparziel für ${state.year}.`), h('button', { type: 'button', class: 'btn ghost', onclick: editPlan }, 'Jahresziel festlegen')));
     } else {
-      wrap.append(h('div', { class: 'card' }, h('h3', null, 'Jahresziel'),
+      side.append(h('div', { class: 'card' }, h('h3', null, 'Jahresziel'),
         h('div', { class: 'goal-h' }, h('span', { class: 'big' }, pct(y.progress)), h('span', { style: { color: 'var(--sub)' } }, `${chf(y.bal)} von ${chf(y.goal)}`)),
         bar(y.progress, y.progress >= 1 ? '' : 'blue'),
         h('div', { class: 'kv' }, h('span', null, 'Noch bis zum Ziel'), h('b', null, chf(y.remain))),
         h('div', { class: 'kv' }, h('span', null, `Nötig pro verbleibendem Monat (${y.left})`), h('b', null, chf(y.needed))),
         h('div', { class: 'kv' }, h('span', null, 'Ideale Sparrate pro Monat'), h('b', null, chf(y.ideal)))));
     }
+    dash.append(side);
+
+    dash.append(h('div', { class: 'card d-c2' }, h('h3', null, 'Wohin das Geld fliesst'), barsChart(),
+      chartLegend([['Fixkosten', 'c-fix'], ['Variable', 'c-var'], ['Gespart', 'c-sav'], ['Frei', 'c-free']])));
+    wrap.append(dash);
     return wrap;
   }
 
   function viewMonths() {
     const y = calcYear(), dev = y.sv - y.plan, now = new Date();
     const wrap = h('div', null, largeTitle('Monate', `Sparplan ${state.year}`));
-    wrap.append(h('div', { class: 'card' }, h('h3', null, 'Sparen im Jahr'),
+    const cols = h('div', { class: 'cols' });
+    const a = h('div', { class: 'c-a' });
+    a.append(h('div', { class: 'card' }, h('h3', null, 'Sparen im Jahr'),
       h('div', { class: 'kv' }, h('span', null, 'Geplant'), h('b', null, chf(y.plan))),
       h('div', { class: 'kv' }, h('span', null, 'Ist'), h('b', null, chf(y.sv))),
       h('div', { class: 'kv' }, h('span', null, 'Abweichung'), h('b', { class: dev < 0 ? 'neg' : dev > 0 ? 'pos' : '' }, (dev > 0 ? '+' : '') + chf(dev)))));
-    wrap.append(group(MONTHS.map((name, i) => {
+    a.append(h('div', { class: 'card d-only' }, h('h3', null, 'Wohin das Geld fliesst'), barsChart(), chartLegend([['Fixkosten', 'c-fix'], ['Variable', 'c-var'], ['Gespart', 'c-sav'], ['Frei', 'c-free']])));
+    const list = h('div', { class: 'c-list' }, group(MONTHS.map((name, i) => {
       const m = state.months[i], c = calcMonth(i), cur = now.getFullYear() === state.year && now.getMonth() === i;
       const sub = m.income == null ? 'Noch nicht erfasst' : `Einnahmen ${chf(m.income)}${m.actual != null ? ' · gespart ' + chf(m.actual) : ''}`;
       return row([name, cur && h('span', { class: 'badge' }, 'jetzt')], m.income == null ? '' : h('span', { class: c.free < 0 ? 'neg strong' : 'strong' }, chf(c.free)), { onclick: () => editMonth(i), sub, chev: true });
-    })));
-    wrap.append(gfoot('Rechts: frei verfügbar nach Fixkosten, Ausgaben und Sparen.'));
+    })), gfoot('Rechts: frei verfügbar nach Fixkosten, Ausgaben und Sparen.'));
+    cols.append(a, list); wrap.append(cols);
     return wrap;
   }
 
   function viewFixed() {
     const mo = fixedMonthly();
     const wrap = h('div', null, largeTitle('Fixkosten', null, h('button', { type: 'button', class: 'fab', 'aria-label': 'Posten hinzufügen', onclick: () => editFixed(null) }, svg(IC.plus, { size: 20, sw: 2.6 }))));
-    wrap.append(h('div', { class: 'card' }, h('h3', null, 'Total'), h('div', { class: 'big' }, chf(mo)), h('div', { class: 'kv', style: { marginTop: '6px' } }, h('span', null, 'pro Monat'), h('b', null, `${chf(mo * 12)} / Jahr`))));
-    wrap.append(group(state.fixed.map((f) => row(f.name || 'Ohne Namen', f.amount == null ? h('span', null, 'Betrag offen') : h('span', { class: 'strong' }, chf(perMonth(f))),
-      { onclick: () => editFixed(f), chev: true, sub: f.amount == null ? INTERVALS.find((x) => x[0] === f.interval)[2] : `${chf(f.amount)} · ${INTERVALS.find((x) => x[0] === f.interval)[2]}${f.note ? ' · ' + f.note : ''}` }))));
-    if (!state.fixed.length) wrap.append(gfoot('Noch keine Posten. Tippe oben rechts auf +.'));
-    else wrap.append(gfoot('Rechts steht jeweils der Betrag pro Monat.'));
+    const cols = h('div', { class: 'cols' });
+    const a = h('div', { class: 'c-a' });
+    a.append(h('div', { class: 'card' }, h('h3', null, 'Total'), h('div', { class: 'big' }, chf(mo)), h('div', { class: 'kv', style: { marginTop: '6px' } }, h('span', null, 'pro Monat'), h('b', null, `${chf(mo * 12)} / Jahr`))));
+    a.append(h('div', { class: 'card' }, h('h3', null, 'Die grössten Brocken'), fixedBars()));
+    const list = h('div', { class: 'c-list' }, group(state.fixed.map((f) => row(f.name || 'Ohne Namen', f.amount == null ? h('span', null, 'Betrag offen') : h('span', { class: 'strong' }, chf(perMonth(f))),
+      { onclick: () => editFixed(f), chev: true, sub: f.amount == null ? INTERVALS.find((x) => x[0] === f.interval)[2] : `${chf(f.amount)} · ${INTERVALS.find((x) => x[0] === f.interval)[2]}${f.note ? ' · ' + f.note : ''}` }))),
+      gfoot(state.fixed.length ? 'Rechts steht jeweils der Betrag pro Monat.' : 'Noch keine Posten. Tippe oben rechts auf +.'));
+    cols.append(a, list); wrap.append(cols);
     return wrap;
   }
 
   function viewGoals() {
     const tot = state.goals.reduce((a, g) => ({ t: a.t + (g.target || 0), s: a.s + (g.saved || 0) }), { t: 0, s: 0 });
     const wrap = h('div', null, largeTitle('Ziele', null, h('button', { type: 'button', class: 'fab', 'aria-label': 'Sparziel hinzufügen', onclick: () => editGoal(null) }, svg(IC.plus, { size: 20, sw: 2.6 }))));
-    wrap.append(h('div', { class: 'card' }, h('h3', null, 'Alle Ziele'), h('div', { class: 'big' }, chf(tot.s)), h('div', { class: 'kv', style: { marginTop: '6px' } }, h('span', null, 'von'), h('b', null, chf(tot.t)))));
-    wrap.append(h('section', { class: 'group' }, state.goals.map((g) => {
+    wrap.append(h('div', { class: 'card' }, h('h3', null, 'Alle Ziele'), h('div', { class: 'big' }, chf(tot.s)), h('div', { class: 'kv', style: { marginTop: '6px' } }, h('span', null, 'von'), h('b', null, chf(tot.t))), tot.t > 0 && bar(tot.s / tot.t, 'blue')));
+    wrap.append(h('section', { class: 'group goals-grid' }, state.goals.map((g) => {
       const p = g.target > 0 ? (g.saved || 0) / g.target : 0, miss = g.target != null ? Math.max(0, g.target - (g.saved || 0)) : null;
       const need = miss != null && g.due && miss > 0 ? miss / monthsUntil(g.due) : null;
       return h('div', { class: 'goal' },
@@ -471,28 +580,66 @@
     const wrap = h('div', null, largeTitle('Mehr', 'Einstellungen'));
     const y = calcYear();
     const cur = THEMES.find((x) => x.id === theme.t);
-    wrap.append(gtitle('Design'), group(row('Farbschema', [themeDots(cur), cur.name.split(' & ')[0]], { onclick: openThemes, chev: true })));
-    wrap.append(gtitle('Sparplan'), group(
+    const A = h('div', { class: 'c-a2' }), B = h('div', { class: 'c-b2' });
+    A.append(gtitle('Design'), group(row('Farbschema', [themeDots(cur), cur.name.split(' & ')[0]], { onclick: openThemes, chev: true })));
+    A.append(gtitle('Sparplan'), group(
       row('Jahr', String(state.year), { onclick: editPlan, chev: true }),
       row('Startguthaben', chf(state.start), { onclick: editPlan, chev: true }),
       row('Jahressparziel', y.goal == null ? 'nicht gesetzt' : chf(y.goal), { onclick: editPlan, chev: true }),
       row('Neues Jahr starten', '', { cls: 'blue', onclick: newYear })));
-    wrap.append(gtitle('Sicherung'), group(
+    A.append(gtitle('Sicherung'), group(
       row('Verschlüsselte Sicherung exportieren', '', { cls: 'blue', onclick: exportBackup }),
       row('Sicherung importieren', '', { cls: 'blue', onclick: importBackup })),
     gfoot('Die Sicherungsdatei ist verschlüsselt. Ohne deine Passphrase ist sie wertlos, auch wenn sie jemand findet.'));
-    wrap.append(gtitle('Sicherheit'), group(
+    B.append(gtitle('Sicherheit'), group(
       row('Jetzt sperren', '', { cls: 'blue', onclick: () => lock('Gesperrt.') }),
       row('Passphrase ändern', '', { cls: 'blue', onclick: changePass }),
       row('Auto-Sperre', '2 Min. Inaktivität'),
       row('Tresor löschen', '', { cls: 'danger', onclick: wipe })));
-    wrap.append(gtitle('So ist die App geschützt'), h('section', { class: 'group sec-list' },
+    B.append(gtitle('Ausprobieren'), group(row(demo ? 'Demo beenden' : 'Beispieldaten ansehen', '', { cls: 'blue', onclick: demo ? exitDemo : startDemo })),
+      gfoot('Zeigt die App mit erfundenen Zahlen. Deine echten Daten bleiben unberührt, im Demo-Modus wird nichts gespeichert.'));
+    B.append(gtitle('So ist die App geschützt'), h('section', { class: 'group sec-list' },
       h('p', null, h('b', null, 'Verschlüsselt im Gerät'), 'AES-256-GCM. Der Schlüssel entsteht aus deiner Passphrase (PBKDF2, 600’000 Runden) und liegt nur im Arbeitsspeicher.'),
       h('p', null, h('b', null, 'Nichts verlässt das Gerät'), 'Keine Server, kein Tracking, keine Fremdskripte. Eine strikte Content-Security-Policy blockiert alles andere.'),
       h('p', null, h('b', null, 'Ehrliche Grenze'), 'Wer dein entsperrtes Gerät hat oder eine schwache Passphrase errät, kommt an die Daten. Wähl mindestens vier zufällige Wörter.')));
-    wrap.append(h('p', { class: 'foot' }, 'Sparplan v1 · lokal & verschlüsselt'));
+    wrap.append(h('div', { class: 'cols2' }, A, B));
+    wrap.append(h('p', { class: 'foot' }, 'Sparplan v2 · lokal & verschlüsselt'));
     return wrap;
   }
+
+  // ───────────────────────── Demo-Modus ─────────────────────────
+  // Beispieldaten leben nur im Arbeitsspeicher. commit() speichert im Demo nie, die echten Daten bleiben unberührt.
+  function demoState() {
+    const y = new Date().getFullYear(), up = Math.min(11, Math.max(5, new Date().getMonth() - 1));
+    const inc = [7400, 7400, 7650, 7400, 7400, 8100, 7400, 7400, 7400, 7650, 7400, 9200];
+    const va = [2150, 1980, 2320, 2050, 2240, 2610, 2890, 2310, 1960, 2180, 2100, 2800];
+    const pl = Array.from({ length: 12 }, (_, i) => (i <= up ? 1300 : null)), ac = [1250, 1400, 1100, 1350, 1200, 900, 700, 1250, 1450, 1300, 1300, 1300];
+    return {
+      v: 1, year: y, start: 4200, goal: 19000,
+      fixed: [
+        ['Miete', 1750, 1, ''], ['Krankenkasse (2 Personen)', 640, 1, ''], ['Steuern', 1800, 3, 'Rate'], ['ÖV-Abo', 85, 1, ''], ['Handy & Internet', 119, 1, ''],
+        ['Fitness', 89, 1, ''], ['Streaming', 28, 1, ''], ['Serafe', 335, 12, ''], ['Haftpflicht & Hausrat', 380, 12, '']
+      ].map(([name, amount, interval, note]) => ({ id: uid(), name, amount, interval, note })),
+      months: inc.map((v, i) => (i <= up ? { income: v, variable: va[i], plan: pl[i], actual: ac[i] } : { income: null, variable: null, plan: null, actual: null })),
+      goals: [
+        { id: uid(), name: 'Ferien', target: 4000, saved: 2150, due: `${y + 1}-06-30` },
+        { id: uid(), name: 'Notgroschen', target: 15000, saved: 8200, due: null },
+        { id: uid(), name: 'Neue Waschmaschine', target: 1200, saved: 900, due: `${y + 1}-03-31` }
+      ]
+    };
+  }
+  function startDemo() {
+    if (demo) return;
+    realState = state; state = demoState(); demo = true; tab = 'home'; selMonth = Math.min(11, Math.max(5, new Date().getMonth() - 1));
+    renderMain(); window.scrollTo(0, 0);
+  }
+  function exitDemo() {
+    if (!demo) return;
+    state = realState; realState = null; demo = false; selMonth = Math.min(new Date().getMonth(), 11); tab = 'home';
+    renderMain(); toast('Demo beendet');
+  }
+  const noDemo = () => { if (demo) { toast('Im Demo-Modus nicht möglich.'); return true; } return false; };
+  const demoBanner = () => h('div', { class: 'demo-banner', role: 'status' }, h('span', null, 'Demo · erfundene Zahlen, nichts wird gespeichert'), h('button', { type: 'button', class: 'pill', onclick: exitDemo }, 'Beenden'));
 
 
   // ───────────────────────── Design (Farbschema) ─────────────────────────
@@ -537,6 +684,7 @@
 
   // ───────────────────────── Aktionen ─────────────────────────
   function newYear() {
+    if (noDemo()) return;
     const y = calcYear();
     confirmSheet(`Jahr ${state.year + 1} starten`, `Das Startguthaben wird auf ${chf(y.bal)} gesetzt, alle Monate werden geleert. Fixkosten und Sparziele bleiben erhalten. Exportiere vorher eine Sicherung, falls du das alte Jahr behalten willst.`, 'Starten', async () => {
       state.year += 1; state.start = Math.round(y.bal * 100) / 100; state.goal = null;
@@ -546,6 +694,7 @@
   }
 
   async function exportBackup() {
+    if (noDemo()) return;
     const raw = localStorage.getItem(STORE); if (!raw) return;
     const name = `sparplan-sicherung-${new Date().toISOString().slice(0, 10)}.sparplan`;
     const blob = new Blob([raw], { type: 'application/json' });
@@ -560,6 +709,7 @@
   }
 
   function importBackup() {
+    if (noDemo()) return;
     const inp = h('input', { type: 'file', accept: '.sparplan,application/json', style: { display: 'none' } });
     inp.addEventListener('change', async () => {
       const f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
@@ -583,6 +733,7 @@
   }
 
   function changePass() {
+    if (noDemo()) return;
     const f1 = field('Neue Passphrase', { type: 'password', auto: 'new-password', cap: 'none', full: true, ph: 'mind. 12 Zeichen' });
     const f2 = field('Wiederholen', { type: 'password', auto: 'new-password', cap: 'none', full: true, ph: 'nochmals' });
     sheet({
@@ -601,6 +752,7 @@
   }
 
   function wipe() {
+    if (noDemo()) return;
     const f = field('Zur Bestätigung', { full: true, ph: 'LÖSCHEN eintippen', cap: 'characters' });
     sheet({
       title: 'Tresor löschen', saveLabel: 'Löschen',
@@ -616,23 +768,34 @@
 
   // ───────────────────────── Hauptansicht ─────────────────────────
   const TABS = [['home', 'Übersicht', IC.pie], ['months', 'Monate', IC.cal], ['fixed', 'Fixkosten', IC.repeat], ['goals', 'Ziele', IC.target], ['more', 'Mehr', IC.more]];
+  const go = (id) => { if (tab !== id) { tab = id; renderMain(); window.scrollTo(0, 0); } };
   function tabbar() {
     return h('div', { class: 'tabbar' }, h('nav', { 'aria-label': 'Hauptmenü' }, TABS.map(([id, label, ic]) =>
-      h('button', { type: 'button', class: 'tab', 'aria-current': id === tab ? 'page' : null, onclick: () => { if (tab !== id) { tab = id; renderMain(); window.scrollTo(0, 0); } } },
+      h('button', { type: 'button', class: 'tab', 'aria-current': id === tab ? 'page' : null, onclick: () => go(id) },
         svg(ic, { size: 25, sw: id === 'more' ? 3.4 : 1.8 }), h('span', null, label)))));
+  }
+  function sidebar() {
+    const item = (label, ic, on, cur, sw) => h('button', { type: 'button', class: 'side-item', 'aria-current': cur ? 'page' : null, onclick: on }, svg(ic, { size: 20, sw: sw || 1.9 }), h('span', null, label));
+    return h('aside', { class: 'side' },
+      h('div', { class: 'brand' }, h('div', { class: 'brand-ic' }, svg(IC.lock, { size: 20, sw: 2 })), h('div', null, h('b', null, 'Sparplan'), h('small', null, String(state.year)))),
+      h('nav', { 'aria-label': 'Hauptmenü' }, TABS.map(([id, label, ic]) => item(label, ic, () => go(id), id === tab, id === 'more' ? 3.4 : 1.9))),
+      h('div', { class: 'side-foot' }, item('Design', IC.palette, openThemes), item('Sperren', IC.lock, () => lock('Gesperrt.'))));
   }
   function renderMain(keepScroll) {
     if (!state) return;
     const y = window.scrollY;
     const views = { home: viewHome, months: viewMonths, fixed: viewFixed, goals: viewGoals, more: viewMore };
-    $app.replaceChildren(h('main', { class: 'view' }, views[tab]()), tabbar());
+    $app.replaceChildren(h('div', { class: 'shell' }, sidebar(), h('main', { class: 'view' }, demo && demoBanner(), views[tab]())), tabbar());
+    drawCharts();
     if (keepScroll) window.scrollTo(0, y);
   }
+  let rzT = 0;
+  window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (state) drawCharts(); }, 120); });
 
   // ───────────────────────── Sperre / Einrichtung ─────────────────────────
   function lock(msg) {
     document.querySelectorAll('.scrim, .sheet, .toast').forEach((n) => n.remove());
-    state = null; key = null;
+    state = null; key = null; demo = false; realState = null;
     if (vault) showLock(msg); else showSetup();
   }
 

@@ -1,7 +1,7 @@
 'use strict';
 // Service Worker: legt nur die eigene App-Hülle (statische Dateien) offline ab.
 // Es werden KEINE Nutzerdaten gecacht, diese liegen verschlüsselt im localStorage.
-const CACHE = 'sparplan-shell-v4';
+const CACHE = 'sparplan-shell-v5';
 const SHELL = [
   './', 'index.html', 'css/style.css', 'js/app.js', 'manifest.webmanifest',
   'bilder/icon-192.png', 'bilder/icon-512.png', 'bilder/apple-touch-icon.png'
