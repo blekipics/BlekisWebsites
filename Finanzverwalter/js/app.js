@@ -427,7 +427,7 @@
         const pts = act.map((v, i) => [X(i), Y(v)]), base = T + ph;
         s.append(svgEl('path', { d: pathOf(pts) + ` L${pts[pts.length - 1][0].toFixed(1)} ${base} L${pts[0][0].toFixed(1)} ${base} Z`, class: 'ch-area' }));
         s.append(svgEl('path', { d: pathOf(pts), class: 'ch-act' }));
-        pts.forEach(([x, y], i) => { const c = svgEl('circle', { cx: x, cy: y, r: 4, class: 'ch-dot' }); const t = svgEl('title'); t.textContent = `${MONTHS[i]}: ${chf(act[i])}`; c.append(t); s.append(c); });
+        pts.forEach(([x, y], i) => { const now = i === pts.length - 1; const c = svgEl('circle', { cx: x, cy: y, r: now ? 6.5 : 4, class: 'ch-dot' + (now ? ' ch-now' : '') }); const t = svgEl('title'); t.textContent = `${MONTHS[i]}: ${chf(act[i])}`; c.append(t); s.append(c); });
       }
       return s;
     });
