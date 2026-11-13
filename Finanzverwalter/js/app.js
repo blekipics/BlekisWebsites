@@ -799,6 +799,10 @@
     if (vault) showLock(msg); else showSetup();
   }
 
+  const PW_HINT = 'Mindestens 12 Zeichen: Gross- und Kleinbuchstaben, Zahlen, Sonderzeichen';
+  const PW_MSG = 'Mindestens 12 Zeichen mit Gross- und Kleinbuchstaben und einer Zahl.';
+  const okPw = (p) => p.length >= 12 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p);
+
   function strength(p) {
     let pool = 0;
     if (/[a-z]/.test(p)) pool += 26; if (/[A-Z]/.test(p)) pool += 26; if (/\d/.test(p)) pool += 10; if (/[^A-Za-z0-9]/.test(p)) pool += 32;
