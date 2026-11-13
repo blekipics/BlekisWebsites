@@ -3,7 +3,7 @@
  *
  * Sicherheitskonzept (v1):
  *  - Alle Daten werden mit AES-256-GCM verschlüsselt, bevor sie gespeichert werden.
- *  - Schlüssel = PBKDF2-HMAC-SHA256 (600'000 Iterationen) aus deiner Passphrase + zufälligem Salt.
+ *  - Schlüssel = PBKDF2-HMAC-SHA256 (600'000 Iterationen) aus deinem Passwort + zufälligem Salt.
  *  - Der Schlüssel ist ein nicht exportierbares CryptoKey-Objekt und lebt nur im Arbeitsspeicher.
  *  - Frische 96-Bit-IV bei jedem Speichern; KDF-Parameter sind als AAD an den Chiffretext gebunden.
  *  - Auto-Sperre bei Inaktivität / App-Wechsel, Inhalt wird beim Wegwechseln ausgeblendet.
@@ -590,18 +590,18 @@
     A.append(gtitle('Sicherung'), group(
       row('Verschlüsselte Sicherung exportieren', '', { cls: 'blue', onclick: exportBackup }),
       row('Sicherung importieren', '', { cls: 'blue', onclick: importBackup })),
-    gfoot('Die Sicherungsdatei ist verschlüsselt. Ohne deine Passphrase ist sie wertlos, auch wenn sie jemand findet.'));
+    gfoot('Die Sicherungsdatei ist verschlüsselt. Ohne dein Passwort ist sie wertlos, auch wenn sie jemand findet.'));
     B.append(gtitle('Sicherheit'), group(
       row('Jetzt sperren', '', { cls: 'blue', onclick: () => lock('Gesperrt.') }),
-      row('Passphrase ändern', '', { cls: 'blue', onclick: changePass }),
+      row('Passwort ändern', '', { cls: 'blue', onclick: changePass }),
       row('Auto-Sperre', '2 Min. Inaktivität'),
       row('Tresor löschen', '', { cls: 'danger', onclick: wipe })));
     B.append(gtitle('Ausprobieren'), group(row(demo ? 'Demo beenden' : 'Beispieldaten ansehen', '', { cls: 'blue', onclick: demo ? exitDemo : startDemo })),
       gfoot('Zeigt die App mit erfundenen Zahlen. Deine echten Daten bleiben unberührt, im Demo-Modus wird nichts gespeichert.'));
     B.append(gtitle('So ist die App geschützt'), h('section', { class: 'group sec-list' },
-      h('p', null, h('b', null, 'Verschlüsselt im Gerät'), 'AES-256-GCM. Der Schlüssel entsteht aus deiner Passphrase (PBKDF2, 600’000 Runden) und liegt nur im Arbeitsspeicher.'),
+      h('p', null, h('b', null, 'Verschlüsselt im Gerät'), 'AES-256-GCM. Der Schlüssel entsteht aus deinem Passwort (PBKDF2, 600’000 Runden) und liegt nur im Arbeitsspeicher.'),
       h('p', null, h('b', null, 'Nichts verlässt das Gerät'), 'Keine Server, kein Tracking, keine Fremdskripte. Eine strikte Content-Security-Policy blockiert alles andere.'),
-      h('p', null, h('b', null, 'Ehrliche Grenze'), 'Wer dein entsperrtes Gerät hat oder eine schwache Passphrase errät, kommt an die Daten. Wähl mindestens vier zufällige Wörter.')));
+      h('p', null, h('b', null, 'Ehrliche Grenze'), 'Wer dein entsperrtes Gerät hat oder ein schwaches Passwort errät, kommt an die Daten. Wähl ein langes, einzigartiges Passwort.')));
     wrap.append(h('div', { class: 'cols2' }, A, B));
     wrap.append(h('p', { class: 'foot' }, 'Sparplan v2 · lokal & verschlüsselt'));
     return wrap;
@@ -715,7 +715,7 @@
       const f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
       let v;
       try { if (f.size > 2e6) throw new Error('size'); v = parseVault(await f.text()); } catch (e) { toast('Das ist keine gültige Sicherung.'); return; }
-      const fPass = field('Passphrase', { type: 'password', auto: 'off', cap: 'none', full: true, ph: 'Passphrase der Sicherung' });
+      const fPass = field('Passwort', { type: 'password', auto: 'off', cap: 'none', full: true, ph: 'Passwort der Sicherung' });
       sheet({
         title: 'Sicherung einspielen', saveLabel: 'Einspielen',
         body: h('div', null, h('p', { class: 'msg' }, 'Achtung: Die aktuellen Daten in dieser App werden ersetzt.'), group(fPass.el)),
@@ -725,7 +725,7 @@
             vault = { v: 1, kdf: v.kdf }; key = r.key; state = r.data;
             localStorage.setItem(STORE, JSON.stringify({ v: 1, kdf: v.kdf, iv: v.iv, ct: v.ct }));
             renderMain(); toast('Sicherung eingespielt');
-          } catch (e) { toast('Falsche Passphrase oder beschädigte Datei.'); return false; }
+          } catch (e) { toast('Falsches Passwort oder beschädigte Datei.'); return false; }
         }
       });
     });
@@ -734,19 +734,19 @@
 
   function changePass() {
     if (noDemo()) return;
-    const f1 = field('Neue Passphrase', { type: 'password', auto: 'new-password', cap: 'none', full: true, ph: 'mind. 12 Zeichen' });
+    const f1 = field('Neues Passwort', { type: 'password', auto: 'new-password', cap: 'none', full: true, ph: 'mind. 12 Zeichen, Gross/klein/Zahl' });
     const f2 = field('Wiederholen', { type: 'password', auto: 'new-password', cap: 'none', full: true, ph: 'nochmals' });
     sheet({
-      title: 'Passphrase ändern', body: h('div', null, group(f1.el, f2.el), gfoot('Alte Sicherungsdateien bleiben mit der alten Passphrase verschlüsselt.')),
+      title: 'Passwort ändern', body: h('div', null, group(f1.el, f2.el), gfoot('Alte Sicherungsdateien bleiben mit dem alten Passwort verschlüsselt.')),
       onSave: async () => {
         const a = f1.get(), b = f2.get();
-        if (a.length < 12) { toast('Mindestens 12 Zeichen.'); return false; }
+        if (!okPw(a)) { toast(PW_MSG); return false; }
         if (a !== b) { toast('Die Eingaben stimmen nicht überein.'); return false; }
         const salt = crypto.getRandomValues(new Uint8Array(16));
         const kdf = { name: 'PBKDF2', hash: 'SHA-256', iter: ITER, salt: b64(salt) };
         const nk = await deriveKey(a, salt, ITER);
         localStorage.setItem(STORE, await sealWith(nk, kdf, state));
-        key = nk; vault = { v: 1, kdf }; toast('Passphrase geändert');
+        key = nk; vault = { v: 1, kdf }; toast('Passwort geändert');
       }
     });
   }
@@ -812,22 +812,22 @@
   }
 
   function showSetup() {
-    const p1 = h('input', { type: 'password', placeholder: 'Passphrase', autocomplete: 'new-password', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Passphrase' });
-    const p2 = h('input', { type: 'password', placeholder: 'Wiederholen', autocomplete: 'new-password', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Passphrase wiederholen' });
-    const mi = h('i'), hint = h('div', { class: 'hint' }, 'Tipp: vier oder fünf zufällige Wörter'), err = h('div', { class: 'err', role: 'alert' });
+    const p1 = h('input', { type: 'password', placeholder: 'Passwort', autocomplete: 'new-password', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Passwort' });
+    const p2 = h('input', { type: 'password', placeholder: 'Wiederholen', autocomplete: 'new-password', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Passwort wiederholen' });
+    const mi = h('i'), hint = h('div', { class: 'hint' }, PW_HINT), err = h('div', { class: 'err', role: 'alert' });
     const btn = h('button', { type: 'submit', class: 'btn' }, 'Tresor erstellen');
     p1.addEventListener('input', () => {
       err.textContent = '';
       const b = strength(p1.value), q = clamp01(b / 80);
       mi.style.width = Math.round(q * 100) + '%';
       mi.style.background = b < 40 ? 'var(--red)' : b < 60 ? 'var(--orange)' : 'var(--green)';
-      hint.textContent = !p1.value ? 'Tipp: vier oder fünf zufällige Wörter' : p1.value.length < 12 ? `Noch ${12 - p1.value.length} Zeichen bis zum Minimum` : b < 40 ? 'Schwach' : b < 60 ? 'Okay' : b < 80 ? 'Gut' : 'Sehr gut';
+      hint.textContent = !p1.value ? PW_HINT : p1.value.length < 12 ? `Noch ${12 - p1.value.length} Zeichen bis zum Minimum` : !okPw(p1.value) ? 'Es fehlen Gross-/Kleinbuchstaben oder eine Zahl' : b < 40 ? 'Schwach' : b < 60 ? 'Okay' : b < 80 ? 'Gut' : 'Sehr gut';
     });
-    const form = authShell('Sparplan', 'Erstelle deinen verschlüsselten Tresor. Die Passphrase kann niemand zurücksetzen. Verlierst du sie, sind die Daten weg.',
+    const form = authShell('Sparplan', 'Erstelle deinen verschlüsselten Tresor. Das Passwort kann niemand zurücksetzen. Verlierst du es, sind die Daten weg.',
       h('div', { class: 'group' }, h('div', { class: 'row' }, p1), h('div', { class: 'row' }, p2)), h('div', { class: 'meter' }, mi), hint, err, btn);
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); err.textContent = '';
-      if (p1.value.length < 12) { err.textContent = 'Mindestens 12 Zeichen.'; return; }
+      if (!okPw(p1.value)) { err.textContent = PW_MSG; return; }
       if (p1.value !== p2.value) { err.textContent = 'Die Eingaben stimmen nicht überein.'; return; }
       btn.disabled = true; btn.textContent = 'Erstelle…';
       try {
@@ -843,10 +843,10 @@
   }
 
   function showLock(msg) {
-    const p = h('input', { type: 'password', placeholder: 'Passphrase', autocomplete: 'current-password', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Passphrase' });
+    const p = h('input', { type: 'password', placeholder: 'Passwort', autocomplete: 'current-password', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Passwort' });
     const err = h('div', { class: 'err', role: 'alert' }, msg || '');
     const btn = h('button', { type: 'submit', class: 'btn' }, 'Entsperren');
-    const form = authShell('Gesperrt', 'Gib deine Passphrase ein, um den Sparplan zu öffnen.', h('div', { class: 'group' }, h('div', { class: 'row' }, p)), err, btn);
+    const form = authShell('Gesperrt', 'Gib dein Passwort ein, um den Sparplan zu öffnen.', h('div', { class: 'group' }, h('div', { class: 'row' }, p)), err, btn);
     let wait = 0, timer;
     const tick = () => { if (wait > 0) { err.textContent = `Zu viele Versuche. Bitte ${wait} s warten.`; btn.disabled = true; wait--; timer = setTimeout(tick, 1000); } else { btn.disabled = false; err.textContent = ''; } };
     if (fails >= 3) { wait = Math.min(60, 2 ** (fails - 2)); tick(); }
@@ -859,7 +859,7 @@
         key = r.key; state = r.data; fails = 0; p.value = ''; clearTimeout(timer); startSession();
       } catch (ex) {
         fails++; p.value = ''; btn.textContent = 'Entsperren'; btn.disabled = false;
-        err.textContent = 'Falsche Passphrase oder beschädigte Daten.';
+        err.textContent = 'Falsches Passwort oder beschädigte Daten.';
         if (fails >= 3) { wait = Math.min(60, 2 ** (fails - 2)); tick(); }
       }
     });
