@@ -16,7 +16,7 @@
 
   // Wie weit muss das Band fahren, und wie hoch muss der Abschnitt sein?
   function measure() {
-    maxShift = Math.max(0, track.scrollWidth - window.innerWidth);
+    maxShift = Math.max(0, track.scrollWidth - sticky.clientWidth);
     section.style.height = (maxShift + sticky.offsetHeight) + 'px';
     update();
   }
@@ -31,7 +31,7 @@
     hint.classList.toggle('is-hidden', p > 0.02);
 
     // Jahr der Karte anzeigen, die der Bildschirmmitte am nächsten ist
-    const mid = window.innerWidth / 2;
+    const mid = sticky.clientWidth / 2;
     let best = cards[0];
     let bestDist = Infinity;
     for (const card of cards) {
