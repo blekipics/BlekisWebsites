@@ -718,3 +718,100 @@ html.js-intro .brief-open { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .flip-inner { transition: none; }
 }
+
+/* ============ Quiz: Wie gut kennst du uns? ============ */
+.quiz {
+  max-width: 720px;
+  padding: 28px;
+  background: var(--card);
+  border: 1px solid var(--cherry);
+}
+
+.quiz-count {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cherry-soft);
+}
+
+.quiz-question {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.quiz-answers {
+  display: grid;
+  gap: 10px;
+}
+
+.quiz-answer {
+  padding: 14px 16px;
+  border: 1px solid var(--cherry);
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  color: var(--cherry);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.quiz-answer:hover:not(:disabled) { background: var(--dawn); }
+.quiz-answer:disabled { cursor: default; }
+
+.quiz-answer.is-right {
+  background: var(--first-light);
+  font-weight: 500;
+}
+
+.quiz-answer.is-wrong {
+  background: var(--cherry);
+  color: var(--dawn);
+}
+
+.quiz-note {
+  min-height: 1.4em;
+  margin: 16px 0 0;
+  font-family: var(--font-hand);
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--cherry-soft);
+}
+
+.quiz-next,
+.quiz-restart {
+  margin-top: 16px;
+  padding: 12px 22px;
+  border: 1px solid var(--cherry);
+  background: var(--cherry);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dawn);
+  cursor: pointer;
+}
+
+.quiz-next:hover,
+.quiz-restart:hover { box-shadow: 4px 4px 0 var(--first-light); }
+
+.quiz-score {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: clamp(44px, 10vw, 72px);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.quiz-result-text {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 26px;
+  line-height: 1.2;
+}

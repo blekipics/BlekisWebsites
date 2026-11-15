@@ -148,3 +148,102 @@ document.querySelectorAll('.flip').forEach(function (card) {
     card.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
 });
+
+// Quiz: Wie gut kennst du uns?
+// Hier kannst du die Fragen ändern. "richtig" ist die Nummer der richtigen Antwort (0 = erste).
+(function () {
+  const FRAGEN = [
+    {
+      frage: '[Frage 1: Wo war unser erstes Date?]',
+      antworten: ['[Antwort A]', '[Antwort B]', '[Antwort C]'],
+      richtig: 0,
+      hinweis: '[Kleiner Kommentar dazu.]'
+    },
+    {
+      frage: '[Frage 2]',
+      antworten: ['[Antwort A]', '[Antwort B]', '[Antwort C]'],
+      richtig: 1,
+      hinweis: '[Kleiner Kommentar dazu.]'
+    },
+    {
+      frage: '[Frage 3]',
+      antworten: ['[Antwort A]', '[Antwort B]', '[Antwort C]', '[Antwort D]'],
+      richtig: 2,
+      hinweis: '[Kleiner Kommentar dazu.]'
+    }
+  ];
+
+  const AUSWERTUNG = [
+    '[Text bei wenigen Treffern: Wir üben das noch.]',
+    '[Text bei vielen Treffern: Fast perfekt.]',
+    '[Text bei allen Treffern: Du kennst mich zu gut.]'
+  ];
+
+  const box = document.getElementById('quiz');
+  if (!box) return;
+
+  let nr = 0;
+  let punkte = 0;
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
+
+  function zeigeFrage() {
+    const f = FRAGEN[nr];
+    box.innerHTML = '';
+    box.appendChild(el('p', 'quiz-count', 'Frage ' + (nr + 1) + ' von ' + FRAGEN.length));
+    box.appendChild(el('h3', 'quiz-question', f.frage));
+
+    const liste = el('div', 'quiz-answers');
+    const note = el('p', 'quiz-note');
+    const weiter = el('button', 'quiz-next', nr === FRAGEN.length - 1 ? 'Ergebnis' : 'Weiter');
+    weiter.type = 'button';
+    weiter.hidden = true;
+
+    f.antworten.forEach(function (text, i) {
+      const b = el('button', 'quiz-answer', text);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        const knoepfe = liste.querySelectorAll('button');
+        knoepfe.forEach(function (k) { k.disabled = true; });
+        knoepfe[f.richtig].classList.add('is-right');
+        if (i === f.richtig) {
+          punkte++;
+        } else {
+          b.classList.add('is-wrong');
+        }
+        note.textContent = f.hinweis || '';
+        weiter.hidden = false;
+        weiter.focus();
+      });
+      liste.appendChild(b);
+    });
+
+    box.appendChild(liste);
+    box.appendChild(note);
+    box.appendChild(weiter);
+    weiter.addEventListener('click', function () {
+      nr++;
+      if (nr < FRAGEN.length) zeigeFrage(); else zeigeErgebnis();
+    });
+  }
+
+  function zeigeErgebnis() {
+    box.innerHTML = '';
+    box.appendChild(el('p', 'quiz-count', 'Ergebnis'));
+    box.appendChild(el('p', 'quiz-score', punkte + ' / ' + FRAGEN.length));
+    const anteil = punkte / FRAGEN.length;
+    const stufe = anteil === 1 ? 2 : anteil >= 0.5 ? 1 : 0;
+    box.appendChild(el('p', 'quiz-result-text', AUSWERTUNG[stufe]));
+    const neu = el('button', 'quiz-restart', 'Nochmal');
+    neu.type = 'button';
+    neu.addEventListener('click', function () { nr = 0; punkte = 0; zeigeFrage(); });
+    box.appendChild(neu);
+  }
+
+  zeigeFrage();
+})();
