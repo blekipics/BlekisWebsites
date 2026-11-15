@@ -139,3 +139,12 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
   update();
 })();
+
+
+// Warum ich dich liebe: Karten umdrehen
+document.querySelectorAll('.flip').forEach(function (card) {
+  card.addEventListener('click', function () {
+    const on = card.classList.toggle('is-flipped');
+    card.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+});

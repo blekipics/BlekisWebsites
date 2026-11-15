@@ -235,7 +235,7 @@ a { text-decoration: none; color: inherit; }
 /* Intro-Bühne: nur mit JavaScript angeheftet, sonst ganz normales Hero */
 .brief-stage { position: relative; }
 
-html.js-intro .brief { height: 240vh; }
+html.js-intro .brief { height: 320vh; }
 
 html.js-intro .brief-stage {
   position: sticky;
@@ -248,6 +248,44 @@ html.js-intro .brief-stage {
 html.js-intro .brief-stage .hero {
   min-height: 0;
   height: 100%;
+}
+
+/* Der ruhige Moment nach dem Auspacken */
+.brief-open {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 var(--gutter);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+html.js-intro .brief-open { display: flex; }
+
+.brief-open-hand {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: clamp(34px, 7vw, 64px);
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--cherry);
+}
+
+.brief-open-arrow {
+  font-size: 28px;
+  color: var(--cherry-soft);
+  animation: nudge 1.6s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
 }
 
 /* ============ Kapitel ============ */
@@ -568,4 +606,115 @@ html.js-intro .brief-stage .hero {
   .memory-photo::after { font-size: 40px; }
   .memory-title { font-size: 24px; }
   .memory-text { font-size: 13px; }
+}
+
+/* ============ Warum ich dich liebe: Karten zum Umdrehen ============ */
+.why-intro {
+  margin: 0 0 8px;
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--cherry-soft);
+}
+
+.why-group {
+  margin: 40px 0 16px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5vw, 34px);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.why-group span {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cherry-soft);
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  max-width: 1000px;
+}
+
+.flip {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  perspective: 900px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.flip-inner {
+  position: relative;
+  display: block;
+  min-height: 240px;
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flip.is-flipped .flip-inner { transform: rotateY(180deg); }
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--cherry);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.flip-front {
+  justify-content: space-between;
+  background: var(--card);
+}
+
+.flip:not(.is-flipped):hover .flip-front { box-shadow: 6px 6px 0 var(--cherry); }
+
+.flip-num {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--cherry-soft);
+}
+
+.flip-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.flip-tap {
+  font-family: var(--font-hand);
+  font-size: 19px;
+  color: var(--cherry-soft);
+}
+
+.flip-back {
+  justify-content: center;
+  background: var(--cherry);
+  color: var(--dawn);
+  transform: rotateY(180deg);
+  overflow: auto;
+}
+
+.flip-text {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner { transition: none; }
 }
