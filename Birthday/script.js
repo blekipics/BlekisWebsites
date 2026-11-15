@@ -72,19 +72,21 @@
   measure();
 })();
 
-// Intro: Geschenkpapier hebt ab, Umschlag öffnet sich, der Brief füllt den Bildschirm
+// Intro: Anhänger fällt ab, Band wird abgezogen, dann ist die Seite da
 (function () {
   const section = document.getElementById('brief');
   if (!section) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const stage = section.querySelector('.brief-stage');
-  const hero = stage.querySelector('.hero');
-  const env = document.getElementById('env');
-  const letter = document.getElementById('envLetter');
-  const flap = document.getElementById('envFlap');
-  const seal = document.getElementById('envSeal');
-  const open = document.getElementById('briefOpen');
+  const ribbon = document.getElementById('giftRibbon');
+  const bow = document.getElementById('giftBow');
+  const fall = document.getElementById('giftFall');
+  const hint = document.getElementById('giftHint');
+  if (!stage || !ribbon || !bow || !fall || !hint) return;
+
+  // Erst jetzt wird die Bühne angeheftet (ohne JavaScript bleibt es ein normales Hero)
+  document.documentElement.classList.add('js-intro');
 
   let ticking = false;
 
@@ -95,51 +97,22 @@
   function update() {
     const total = section.offsetHeight - stage.offsetHeight;
     const p = total > 0 ? clamp(-section.getBoundingClientRect().top / total) : 0;
-
-    const H = env.offsetHeight;
-    const vw = stage.clientWidth;
     const vh = stage.clientHeight;
 
-    // 1) Geschenkpapier (Band, Schleife, Anhänger) wird nach oben abgehoben
-    const lift = ease(seg(p, 0.02, 0.2));
-    hero.style.transform = 'translate3d(0,' + (-lift * vh * 1.05) + 'px,0)';
-    hero.style.visibility = lift >= 1 ? 'hidden' : 'visible';
+    // 1) Hinweis blendet aus
+    hint.style.opacity = 1 - seg(p, 0.0, 0.1);
 
-    // Darunter wird der Umschlag sichtbar
-    const envIn = ease(seg(p, 0.05, 0.2));
-    env.style.opacity = envIn;
-    env.style.transform = 'translate3d(0,' + ((1 - envIn) * vh * 0.1) + 'px,0)';
+    // 2) Anhänger reisst ab und fällt
+    const drop = ease(seg(p, 0.04, 0.34));
+    fall.style.transform = 'translate3d(' + (drop * 40) + 'px,' + (drop * vh * 0.9) + 'px,0) rotate(' + (drop * 28) + 'deg)';
+    fall.style.opacity = 1 - seg(p, 0.24, 0.36);
+    fall.style.visibility = drop >= 1 ? 'hidden' : 'visible';
 
-    // 2) Siegel verschwindet, Klappe klappt nach oben auf
-    const sealT = ease(seg(p, 0.2, 0.28));
-    seal.style.opacity = 1 - sealT;
-    seal.style.transform = 'scale(' + (1 - 0.25 * sealT) + ')';
-
-    const angle = ease(seg(p, 0.24, 0.46)) * 180;
-    flap.style.transform = 'perspective(1100px) rotateX(' + (-angle) + 'deg)';
-    flap.style.zIndex = angle > 90 ? 1 : 4;
-
-    // 3) Brief fährt heraus, wandert in die Mitte und wächst auf Bildschirmgrösse
-    const rise = ease(seg(p, 0.44, 0.66));
-    const grow = ease(seg(p, 0.68, 0.9));
-    const lw = letter.offsetWidth;
-    const lh = letter.offsetHeight;
-    const target = Math.max(vw / lw, vh / lh) * 1.04;
-    // Ruheposition des Briefs liegt bei ca. 53 % der Umschlaghöhe. Ziel: Bildschirmmitte
-    const restCenterY = env.offsetTop + H * 0.53;
-    const finalTy = vh / 2 - restCenterY;
-    const ty = -rise * H * 0.78 * (1 - grow) + finalTy * grow;
-    const scale = 1 + grow * (target - 1);
-    letter.style.zIndex = p > 0.66 ? 6 : 2;
-    letter.style.transform = 'translate3d(0,' + ty + 'px,0) scale(' + scale + ')';
-
-    // Inhalt des kleinen Briefs blendet aus, bevor er gross wird
-    const fade = 1 - seg(p, 0.66, 0.78);
-    letter.firstElementChild.style.opacity = fade;
-    letter.querySelectorAll('.letter-line').forEach((l) => { l.style.opacity = 0.3 * fade; });
-
-    // 4) Der Satz erscheint auf dem grossen Brief
-    open.style.opacity = ease(seg(p, 0.86, 0.97));
+    // 3) Band und Schleife werden nach oben abgezogen
+    const pull = ease(seg(p, 0.26, 0.94));
+    const up = -pull * (vh * 1.15);
+    ribbon.style.transform = 'translate3d(-50%,' + up + 'px,0) rotate(' + (pull * 2) + 'deg)';
+    bow.style.transform = 'translate3d(0,' + up + 'px,0) rotate(' + (pull * 8) + 'deg)';
 
     ticking = false;
   }
@@ -157,4 +130,3 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
   update();
 })();
-

@@ -12,7 +12,8 @@
   --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
   --font-hand: "Caveat", "Comic Sans MS", cursive;
   --gutter: clamp(20px, 5vw, 64px);
-  --pad: max(var(--gutter), calc((100vw - 1440px) /2 + var(--gutter)));
+  /* Seitenrand: auf breiten Bildschirmen wächst er mit, damit der Inhalt mittig bleibt */
+  --pad: max(var(--gutter), calc((100vw - 1440px) / 2 + var(--gutter)));
 }
 
 * { box-sizing: border-box; }
@@ -216,6 +217,37 @@ a { text-decoration: none; color: inherit; }
 
 @media (max-width: 420px) {
   .hero-more { font-size: 19px; padding: 8px 14px; }
+}
+
+/* Wrapper, damit der Anhänger abfallen kann, während er weiter schaukelt */
+.gift-fall {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  transform-origin: 50% 0;
+  will-change: transform;
+}
+
+/* Intro-Bühne: nur mit JavaScript angeheftet, sonst ganz normales Hero */
+.brief-stage { position: relative; }
+
+html.js-intro .brief { height: 240vh; }
+
+html.js-intro .brief-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+html.js-intro .brief-stage .hero {
+  min-height: 0;
+  height: 100%;
 }
 
 /* ============ Kapitel ============ */
@@ -536,169 +568,4 @@ a { text-decoration: none; color: inherit; }
   .memory-photo::after { font-size: 40px; }
   .memory-title { font-size: 24px; }
   .memory-text { font-size: 13px; }
-}
-
-/* ============ Brief-Intro: Umschlag öffnet sich beim Scrollen ============ */
-/* ============ Intro: Geschenkpapier wird abgehoben, Umschlag öffnet sich ============ */
-.brief {
-  position: relative;
-  height: 450vh;
-}
-
-.brief-stage {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brief-stage .hero {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  min-height: 0;
-  will-change: transform;
-}
-
-.env {
-  opacity: 0;
-  --env-w: min(86vw, 520px);
-  position: relative;
-  width: var(--env-w);
-  aspect-ratio: 500 / 330;
-  margin-top: 8vh;
-}
-
-.env-back {
-  position: absolute;
-  inset: 0;
-  background: var(--photo);
-  border: 1px solid var(--cherry);
-}
-
-.env-letter {
-  position: absolute;
-  z-index: 2;
-  left: 5%;
-  right: 5%;
-  top: 8%;
-  height: 90%;
-  padding: 7% 9%;
-  background: var(--card);
-  border: 1px solid var(--cherry);
-  will-change: transform;
-}
-
-.letter-title {
-  margin: 0 0 12px;
-  font-family: var(--font-display);
-  font-size: clamp(22px, 5vw, 30px);
-  font-weight: 500;
-  line-height: 1;
-}
-
-.letter-line {
-  display: block;
-  height: 1px;
-  margin-top: 14px;
-  background: var(--cherry);
-  opacity: 0.3;
-}
-.letter-line.short { width: 55%; }
-
-.env-front,
-.env-flap {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  overflow: visible;
-}
-
-.env-front {
-  z-index: 3;
-  top: 0;
-  height: 100%;
-  pointer-events: none;
-}
-.env-front path { fill: #F1C3CF; stroke: var(--cherry); stroke-width: 1; vector-effect: non-scaling-stroke; }
-
-.env-flap {
-  z-index: 4;
-  top: 0;
-  height: 57.6%;
-  transform-origin: 50% 0;
-  will-change: transform;
-}
-.env-flap path { fill: #EDB0BE; stroke: var(--cherry); stroke-width: 1; vector-effect: non-scaling-stroke; }
-
-/* Wachssiegel auf der Spitze der Klappe */
-.env-seal {
-  position: absolute;
-  z-index: 5;
-  left: 50%;
-  top: 57.6%;
-  width: clamp(54px, 12vw, 74px);
-  height: clamp(54px, 12vw, 74px);
-  margin: calc(clamp(54px, 12vw, 74px) / -2) 0 0 calc(clamp(54px, 12vw, 74px) / -2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--cherry);
-  border: 2px solid var(--first-light);
-  color: var(--first-light);
-  font-family: var(--font-display);
-  font-size: clamp(16px, 3.4vw, 22px);
-  font-weight: 500;
-  will-change: transform, opacity;
-}
-
-/* Letzter Moment: der Brief füllt alles, ein Satz erscheint */
-.brief-open {
-  position: absolute;
-  inset: 0;
-  z-index: 8;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  text-align: center;
-  padding: 0 var(--gutter);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.brief-open-hand {
-  margin: 0;
-  font-family: var(--font-hand);
-  font-size: clamp(34px, 7vw, 64px);
-  font-weight: 500;
-  line-height: 1.1;
-}
-
-.brief-open-arrow {
-  font-size: 28px;
-  color: var(--cherry-soft);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .brief-open-arrow { animation: nudge 1.6s ease-in-out infinite; }
-}
-
-@keyframes nudge {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(8px); }
-}
-
-/* Weniger Bewegung: nur das Geschenk-Hero, kein Scroll-Effekt */
-@media (prefers-reduced-motion: reduce) {
-  .brief { height: auto; }
-  .brief-stage { position: static; height: auto; overflow: visible; display: block; }
-  .brief-stage .hero { position: relative; min-height: 100vh; min-height: 100svh; }
-  .env, .brief-open { display: none; }
 }
