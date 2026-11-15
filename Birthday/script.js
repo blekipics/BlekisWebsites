@@ -72,18 +72,18 @@
   measure();
 })();
 
-// Brief-Intro: Umschlag öffnet sich beim Scrollen, der Brief füllt den Bildschirm
+// Intro: Geschenkpapier hebt ab, Umschlag öffnet sich, der Brief füllt den Bildschirm
 (function () {
   const section = document.getElementById('brief');
   if (!section) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const stage = section.querySelector('.brief-stage');
+  const hero = stage.querySelector('.hero');
   const env = document.getElementById('env');
   const letter = document.getElementById('envLetter');
   const flap = document.getElementById('envFlap');
   const seal = document.getElementById('envSeal');
-  const hint = document.getElementById('briefHint');
   const open = document.getElementById('briefOpen');
 
   let ticking = false;
@@ -100,38 +100,46 @@
     const vw = stage.clientWidth;
     const vh = stage.clientHeight;
 
-    // 1) Siegel verschwindet, Hinweis blendet aus
-    const sealT = ease(seg(p, 0.05, 0.14));
+    // 1) Geschenkpapier (Band, Schleife, Anhänger) wird nach oben abgehoben
+    const lift = ease(seg(p, 0.02, 0.2));
+    hero.style.transform = 'translate3d(0,' + (-lift * vh * 1.05) + 'px,0)';
+    hero.style.visibility = lift >= 1 ? 'hidden' : 'visible';
+
+    // Darunter wird der Umschlag sichtbar
+    const envIn = ease(seg(p, 0.05, 0.2));
+    env.style.opacity = envIn;
+    env.style.transform = 'translate3d(0,' + ((1 - envIn) * vh * 0.1) + 'px,0)';
+
+    // 2) Siegel verschwindet, Klappe klappt nach oben auf
+    const sealT = ease(seg(p, 0.2, 0.28));
     seal.style.opacity = 1 - sealT;
     seal.style.transform = 'scale(' + (1 - 0.25 * sealT) + ')';
-    hint.style.opacity = 1 - seg(p, 0.02, 0.1);
 
-    // 2) Klappe klappt nach oben auf
-    const angle = ease(seg(p, 0.1, 0.36)) * 180;
+    const angle = ease(seg(p, 0.24, 0.46)) * 180;
     flap.style.transform = 'perspective(1100px) rotateX(' + (-angle) + 'deg)';
     flap.style.zIndex = angle > 90 ? 1 : 4;
 
-    // 3) Brief fährt heraus, danach in die Mitte und wächst auf Bildschirmgrösse
-    const rise = ease(seg(p, 0.34, 0.6));
-    const grow = ease(seg(p, 0.62, 0.9));
+    // 3) Brief fährt heraus, wandert in die Mitte und wächst auf Bildschirmgrösse
+    const rise = ease(seg(p, 0.44, 0.66));
+    const grow = ease(seg(p, 0.68, 0.9));
     const lw = letter.offsetWidth;
     const lh = letter.offsetHeight;
     const target = Math.max(vw / lw, vh / lh) * 1.04;
-    // Ziel: Mitte des Bildschirms (Ruheposition des Briefs liegt bei ca. 53 % der Umschlaghöhe)
-    const restCenterY = env.getBoundingClientRect().top - stage.getBoundingClientRect().top + H * 0.53;
+    // Ruheposition des Briefs liegt bei ca. 53 % der Umschlaghöhe. Ziel: Bildschirmmitte
+    const restCenterY = env.offsetTop + H * 0.53;
     const finalTy = vh / 2 - restCenterY;
     const ty = -rise * H * 0.78 * (1 - grow) + finalTy * grow;
     const scale = 1 + grow * (target - 1);
-    letter.style.zIndex = p > 0.6 ? 6 : 2;
+    letter.style.zIndex = p > 0.66 ? 6 : 2;
     letter.style.transform = 'translate3d(0,' + ty + 'px,0) scale(' + scale + ')';
 
     // Inhalt des kleinen Briefs blendet aus, bevor er gross wird
-    const fade = 1 - seg(p, 0.6, 0.74);
+    const fade = 1 - seg(p, 0.66, 0.78);
     letter.firstElementChild.style.opacity = fade;
     letter.querySelectorAll('.letter-line').forEach((l) => { l.style.opacity = 0.3 * fade; });
 
     // 4) Der Satz erscheint auf dem grossen Brief
-    open.style.opacity = ease(seg(p, 0.84, 0.97));
+    open.style.opacity = ease(seg(p, 0.86, 0.97));
 
     ticking = false;
   }
@@ -149,3 +157,4 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
   update();
 })();
+

@@ -539,9 +539,10 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ============ Brief-Intro: Umschlag öffnet sich beim Scrollen ============ */
+/* ============ Intro: Geschenkpapier wird abgehoben, Umschlag öffnet sich ============ */
 .brief {
   position: relative;
-  height: 400vh;
+  height: 450vh;
 }
 
 .brief-stage {
@@ -555,7 +556,16 @@ a { text-decoration: none; color: inherit; }
   justify-content: center;
 }
 
+.brief-stage .hero {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  min-height: 0;
+  will-change: transform;
+}
+
 .env {
+  opacity: 0;
   --env-w: min(86vw, 520px);
   position: relative;
   width: var(--env-w);
@@ -647,21 +657,6 @@ a { text-decoration: none; color: inherit; }
   will-change: transform, opacity;
 }
 
-.brief-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 32px;
-  transform: translateX(-50%);
-  margin: 0;
-  width: max-content;
-  max-width: calc(100vw - 2 * var(--gutter));
-  text-align: center;
-  font-family: var(--font-hand);
-  font-size: 22px;
-  font-weight: 500;
-  color: var(--cherry);
-}
-
 /* Letzter Moment: der Brief füllt alles, ein Satz erscheint */
 .brief-open {
   position: absolute;
@@ -700,11 +695,10 @@ a { text-decoration: none; color: inherit; }
   50%      { transform: translateY(8px); }
 }
 
-/* Weniger Bewegung: Brief steht offen da, kein Scroll-Effekt */
+/* Weniger Bewegung: nur das Geschenk-Hero, kein Scroll-Effekt */
 @media (prefers-reduced-motion: reduce) {
-  .brief { height: 100vh; }
-  .env { display: none; }
-  .brief-hint { display: none; }
-  .brief-open { opacity: 1; }
-  .brief-stage { background: var(--card); }
+  .brief { height: auto; }
+  .brief-stage { position: static; height: auto; overflow: visible; display: block; }
+  .brief-stage .hero { position: relative; min-height: 100vh; min-height: 100svh; }
+  .env, .brief-open { display: none; }
 }
