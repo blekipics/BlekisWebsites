@@ -83,9 +83,9 @@
   const bow = document.getElementById('giftBow');
   const fall = document.getElementById('giftFall');
   const hint = document.getElementById('giftHint');
-  if (!stage || !ribbon || !bow || !fall || !hint) return;
+  const open = document.getElementById('briefOpen');
+  if (!stage || !ribbon || !bow || !fall || !hint || !open) return;
 
-  // Erst jetzt wird die Bühne angeheftet (ohne JavaScript bleibt es ein normales Hero)
   document.documentElement.classList.add('js-intro');
 
   let ticking = false;
@@ -102,17 +102,26 @@
     // 1) Hinweis blendet aus
     hint.style.opacity = 1 - seg(p, 0.0, 0.1);
 
-    // 2) Anhänger reisst ab und fällt
-    const drop = ease(seg(p, 0.04, 0.34));
-    fall.style.transform = 'translate3d(' + (drop * 40) + 'px,' + (drop * vh * 0.9) + 'px,0) rotate(' + (drop * 28) + 'deg)';
-    fall.style.opacity = 1 - seg(p, 0.24, 0.36);
-    fall.style.visibility = drop >= 1 ? 'hidden' : 'visible';
+    // 2) Anhänger reisst ab: erst ein kleiner Ruck, dann fällt er immer schneller
+    const t = seg(p, 0.04, 0.3);
+    const x = Math.sin(t * Math.PI) * 26 + t * 30;
+    const y = t * t * vh * 1.05;
+    const rot = t * 26 + Math.sin(t * 9) * 6 * (1 - t);
+    fall.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) rotate(' + rot + 'deg)';
+    fall.style.opacity = 1 - seg(p, 0.22, 0.3);
+    fall.style.visibility = t >= 1 ? 'hidden' : 'visible';
 
     // 3) Band und Schleife werden nach oben abgezogen
-    const pull = ease(seg(p, 0.26, 0.94));
+    const pull = ease(seg(p, 0.24, 0.6));
     const up = -pull * (vh * 1.15);
     ribbon.style.transform = 'translate3d(-50%,' + up + 'px,0) rotate(' + (pull * 2) + 'deg)';
     bow.style.transform = 'translate3d(0,' + up + 'px,0) rotate(' + (pull * 8) + 'deg)';
+
+    // 4) Ruhiger Moment: "Ich hab da was für dich …" blendet ein, bleibt kurz, blendet aus
+    const inn = ease(seg(p, 0.56, 0.68));
+    const out = ease(seg(p, 0.86, 0.96));
+    open.style.opacity = inn * (1 - out);
+    open.style.transform = 'translate3d(0,' + ((1 - inn) * 18 - out * 18) + 'px,0)';
 
     ticking = false;
   }
